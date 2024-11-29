@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  SAM template for a infrastructure that allows to increment a counter for each user
+  Interacts with a API Gateway thats calls a Lambda function that increments a counter in a DynamoDB table and sends the "new increment" event to a SQS queue
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+    Tracing: Active
+    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
+    LoggingConfig:
+      LogFormat: JSON
+  Api:
+    TracingEnabled: true
+
+# put some already existing resources here
+Parameters:
+  UserPoolArn:
+    Type: String
+    Description: User pool arn
+  DynamoDBTableName:
+    Type: String
+    Description: DynamoDB table name
+
+Resources:
+  IncrementQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: increment-queue
+
+  IncrementApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !Ref UserPoolArn
+            Identity:
+              ReauthorizeEvery: 0 # The token is valid for 1 hour
+
+  IncrementFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: lambda_increment/
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBReadPolicy:
+            TableName: !Ref DynamoDBTableName
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt IncrementQueue.QueueName
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTableName
+          QUEUE_URL: !Ref IncrementQueue
+      Events:
+        ApiEvent:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /increment
+            Method: POST
+            RestApiId: !Ref IncrementApi
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: "true"
+
+Outputs:
+  IncrementApi:
+    Description: API Gateway endpoint URL for dev stage for Increment function
+    Value: !Sub "https://${IncrementApi}.execute-api.${AWS::Region}.amazonaws.com/dev/increment/"
+  IncrementFunction:
+    Description: Increment Lambda Function ARN
+    Value: !GetAtt IncrementFunction.Arn
+  IncrementFunctionIamRole:
+    Description: Implicit IAM Role created for Increment function
+    Value: !GetAtt IncrementFunctionRole.Arn
+  IncrementQueueUrl:
+    Description: URL de la cola SQS increment-queue
+    Value: !Ref IncrementQueue
