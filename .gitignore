@@ -247,4 +247,7 @@ deps/
 # every folder in lambda_increment
 lambda_increment/*/
 
+# every folder in .aws-sam
+.aws-sam/auto-dependency-layer
+
 # End of https://www.gitignore.io/api/osx,linux,python,windows,pycharm,visualstudiocode
