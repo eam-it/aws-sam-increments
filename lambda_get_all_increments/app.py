@@ -3,7 +3,6 @@ import boto3
 import os
 
 def lambda_handler(event, context):
-    # Get all increments
     dynamodb = boto3.resource('dynamodb')
     tableName = os.environ['DYNAMODB_TABLE_NAME']
     table = dynamodb.Table(tableName)
