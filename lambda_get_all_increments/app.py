@@ -1,6 +1,12 @@
 import json
 import boto3
 import os
+from decimal import Decimal
+
+def decimal_to_int(obj):
+    if isinstance(obj, Decimal):
+        return int(obj)
+    raise TypeError("Type not serializable")
 
 def lambda_handler(event, context):
     dynamodb = boto3.resource('dynamodb')
@@ -14,7 +20,7 @@ def lambda_handler(event, context):
         formatted_items = [
             {
                 "userId": item.get("user_id"),
-                "increments": item.get("counter")
+                "increments": decimal_to_int(item.get("counter"))
             }
             for item in items
         ]
