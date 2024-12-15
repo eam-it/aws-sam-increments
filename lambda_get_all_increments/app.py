@@ -10,15 +10,21 @@ def lambda_handler(event, context):
 
     try:
         response = table.scan()
-        items = response['Items']
+        items = response.get('Items', [])
+
+        formatted_items = [
+            {
+                "userId": item.get("user_id"),
+                "increments": item.get("counter")
+            }
+            for item in items
+        ]
         return {
             "statusCode": 200,
             "headers": {
                 "Content-Type": "application/json"
             },
-            "body": json.dumps({
-                'increments': items
-            })
+            "body": json.dumps(formatted_items)
         }
     except Exception as e:
         return {
