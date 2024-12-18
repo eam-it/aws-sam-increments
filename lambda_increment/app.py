@@ -19,6 +19,7 @@ def lambda_handler(event, context):
 
         table.put_item(Item={
             'user_id': user_id,
+            'all_user_increments': os.environ['PARTITION_COUNTER_INDEX_KEY'],
             'counter': item.get('counter', 0) + 1
         })
     except Exception as e:

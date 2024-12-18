@@ -24,6 +24,14 @@ Parameters:
   DynamoDBTableName:
     Type: String
     Description: DynamoDB table name
+  PartitionCounterIndexName:
+    Type: String
+    Description: DynamoDB index name
+    Default: user-counter-index
+  PartitionCounterIndexKey:
+    Type: String
+    Description: DynamoDB index partition key name and value
+    Default: all_user_increments
 
 Resources:
   IncrementQueue:
@@ -58,6 +66,8 @@ Resources:
       Environment:
         Variables:
           DYNAMODB_TABLE_NAME: !Ref DynamoDBTableName
+          PARTITION_COUNTER_INDEX_NAME: !Ref PartitionCounterIndexName
+          PARTITION_COUNTER_INDEX_KEY: !Ref PartitionCounterIndexKey
           QUEUE_URL: !Ref IncrementQueue
       Events:
         ApiEvent:
@@ -87,6 +97,33 @@ Resources:
             Path: /increments
             Method: GET
             RestApiId: !Ref IncrementApi
+            Auth:
+              Authorizer: NONE
+
+  TopIncrementFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: lambda_top_increment/
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoDBTableName
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTableName
+          PARTITION_COUNTER_INDEX_NAME: !Ref PartitionCounterIndexName
+          PARTITION_COUNTER_INDEX_KEY: !Ref PartitionCounterIndexKey
+      Events:
+        ApiEvent:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /increments/top
+            Method: GET
+            RestApiId: !Ref IncrementApi
+            Auth:
+              Authorizer: NONE
 
   GetMyIncrementsFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
