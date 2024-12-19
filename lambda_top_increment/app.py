@@ -32,7 +32,6 @@ def lambda_handler(event, context):
         
         items = [
             {
-                **m,
                 'userId': m['user_id'],
                 'increments': decimal_to_int(m['counter'])
             }
