@@ -33,6 +33,7 @@ def lambda_handler(event, context):
         items = [
             {
                 'userId': m['user_id'],
+                'email': m['email'],
                 'increments': decimal_to_int(m['counter'])
             }
             for m in response['Items']

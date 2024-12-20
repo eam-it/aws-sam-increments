@@ -10,6 +10,7 @@ def lambda_handler(event, context):
 
     try:
         user_id = event['requestContext']['authorizer']['claims']['sub']
+        email = event['requestContext']['authorizer']['claims']['email']
 
         increment_item = table.get_item(Key={'user_id': user_id})
         if 'Item' in increment_item:
@@ -19,6 +20,7 @@ def lambda_handler(event, context):
 
         table.put_item(Item={
             'user_id': user_id,
+            'email': email,
             'all_user_increments': os.environ['PARTITION_COUNTER_INDEX_KEY'],
             'counter': item.get('counter', 0) + 1
         })

@@ -20,6 +20,7 @@ def lambda_handler(event, context):
         formatted_items = [
             {
                 "userId": item.get("user_id"),
+                "email": item.get("email"),
                 "increments": decimal_to_int(item.get("counter"))
             }
             for item in items
