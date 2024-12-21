@@ -31,7 +31,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 200,
                 "headers": {"Content-Type": "application/json"},
-                "body": json.dumps({'userId': user_id, 'increments': item['counter']})
+                "body": json.dumps({'userId': user_id, 'email': item['email'], 'increments': item['counter']}) 
             }
         else:
             return {
